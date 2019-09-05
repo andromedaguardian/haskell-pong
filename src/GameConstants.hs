@@ -7,7 +7,10 @@ module GameConstants(
     paddleWidth,
     paddleHeight,
     paddleOffset,
-    minPaddleVel)where
+    minPaddleVel,
+    blocks,
+    blockWidth,
+    blockHeight)where
 
 width, height, offset :: Int
 width  = 800                                        -- ^ window width
@@ -23,3 +26,9 @@ paddleWidth = 20
 paddleHeight = 80
 paddleOffset = 20                                   -- ^ the distance between the paddle and the edge of the window
 minPaddleVel = 10                                   -- ^he velocity which a paddle moves
+
+blocks :: [(Float, Float)]
+blocks = [(-80, 30), (80, -200), (-150, -200), (150, 150)]
+blockWidth, blockHeight :: Float
+blockWidth = 15
+blockHeight = 80

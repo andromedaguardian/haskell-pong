@@ -1,7 +1,8 @@
 module Ball(
     moveBall,
     ballBounce,
-    ballHitEdge) where
+    ballHitEdge,
+    pongLevelUp) where
 
 import PongGameState
 import GameConstants
@@ -23,7 +24,7 @@ moveBall seconds game = game { ballLoc = (x', y') }
     y' = y + vel * dy * seconds * 10
 
 ballHitEdge :: PongGame -> PongGame
-ballHitEdge game = game {ballLoc = ballLoc', ballVel = bv, ballDir = ballDir', paddleVel = pv}
+ballHitEdge game = game {ballLoc = ballLoc', ballVel = bv, ballDir = ballDir', paddleVel = pv, difficult = d, paddleHits = ph}
       where
         (x, y) = ballLoc game
         ballDir'
@@ -36,17 +37,17 @@ ballHitEdge game = game {ballLoc = ballLoc', ballVel = bv, ballDir = ballDir', p
           | (x - fromIntegral 10) > (fromIntegral width / 2)  = (0, 0)
           | otherwise = ballLoc game
 
-        (pv, bv)
+        (pv, bv, d, ph)
           | (x + fromIntegral 10) < (fromIntegral (-width)/2) ||
            (x - fromIntegral 10) > (fromIntegral width / 2) =
-              (minPaddleVel, minBallVel)
-          | otherwise = (paddleVel game, ballVel game)
+              (minPaddleVel, minBallVel, 0, 0)
+          | otherwise = (paddleVel game, ballVel game, difficult game, paddleHits game)
 
 
 -- | Detect a collision with one of the side walls. Upon collisions,
 -- | update the velocity of the ball to bounce it off the wall.
 ballBounce :: PongGame -> PongGame
-ballBounce game = game { ballDir = ballDir' }
+ballBounce game = game { ballDir = ballDir'}
   where
     -- Radius. Use the same thing as in `render`.
     radius = 10
@@ -56,9 +57,10 @@ ballBounce game = game { ballDir = ballDir' }
     (bx, by) = ballLoc game                                          -- The Ball Location
     p1 = ( fromIntegral (-width)/2 + paddleOffset, player1 game)     -- player 1 location
     p2 = (fromIntegral width/2 - paddleOffset, player2 game)         -- player 2 location
- 
+
     ballDir' 
         | wallCollision (ballLoc game) ballRadius =  (dx, (-dy)) 
+        | blockColission = ((-dx), dy) 
         | paddleCollision game = newDir
         | otherwise = ballDir game
         where
@@ -78,6 +80,24 @@ ballBounce game = game { ballDir = ballDir' }
               | bx < 0 = (by - (snd p1))                       -- computes the Y-direction based on player 1
               |otherwise = (by - (snd p2))                     -- otherwise computes for player 2
 
+            blockColission = foldl (||) False $ take (difficult game) blockStatus
+            blockStatus = map checkCollision blocks
+            checkCollision (x, y) 
+                -- |bx < 0 && (x + w) > (bx - ballRadius) && (x - w) < (bx + ballRadius) &&
+                -- (y + h) > (by - ballRadius) && (y - h) < (by + ballRadius) =
+                --   True
+              
+                | (x - w) < (bx + ballRadius) && (x + w) > (bx - ballRadius) &&
+                (y + h) > (by - ballRadius) && (y - h) < (by + ballRadius) =
+                    True
+                |otherwise = False
+                
+                where                      
+                    (bx , by) = (ballLoc game)                     
+                    w = blockWidth / 2                            
+                    h = blockHeight / 2                           
+
+
 type Radius = Float 
 type Position = (Float, Float)
 -- | Given position and radius of the ball, return whether a collision occurred.
@@ -87,7 +107,27 @@ wallCollision (_, y) radius = topCollision || bottomCollision
     topCollision    = y - radius <= -fromIntegral height / 2 
     bottomCollision = y + radius >=  fromIntegral height / 2
 
+  
     
+-- | increases the difficult of the game 
+pongLevelUp :: PongGame -> PongGame
+pongLevelUp game = game {difficult = nextLevel, ballVel = harderBallVel, paddleVel = harderPaddleVel, paddleHits = pHits}
+  where 
+    (nextLevel)
+      | ((mod (paddleHits game) 40) == 39)  && (paddleCollision game) = difficult game + 1
+      | otherwise = difficult game
+
+    (harderBallVel, harderPaddleVel, pHits)
+      | (mod (paddleHits game) 10) == 9 = (bv, pv, paddleHits game + 1)
+      | otherwise = (ballVel game, paddleVel game, paddleHits game)
+    
+    bv = ballVel game * 1.25                                      -- the ball speed up 25% of its velocity
+    pv = paddleVel game * 1.05                                    -- the paddles speed up 5% of its velocity
+
+
 -- | normalize a vector
 normalize :: (Float, Float) -> (Float, Float)
 normalize (x, y) = (x / n, y / n) where n = sqrt (x^2 + y^2)
+
+
+

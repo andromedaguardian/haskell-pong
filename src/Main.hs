@@ -32,7 +32,7 @@ initialState = Game
   , dp2 = 0
   , paddleHits = 0
   , paddleVel = minPaddleVel
-  , difficult = 1
+  , difficult = 0
   }
 
 window :: Display
@@ -51,7 +51,7 @@ main = play window background fps initialState render handleKeys update
 -- | Update the game by moving the ball and bouncing off walls.
 update :: Float -> PongGame -> PongGame
 update  seconds = 
-     paddleConstraints . paddleHitBall . movePaddle .  ballHitEdge . ballBounce . moveBall seconds . pongLevelUp
+     paddleConstraints . paddleHitBall . movePaddle .  pongLevelUp . ballHitEdge . ballBounce . moveBall seconds
 
 -- | convert degrees to radius
 degreeToRadius :: Float -> Float

@@ -10,8 +10,7 @@ module PongGameState(
     paddleHits,
     paddleVel,
     difficult,
-    render,
-    pongLevelUp) where
+    render) where
 
 import Data.Set as S
 import Graphics.Gloss
@@ -62,51 +61,14 @@ render game =
       [translate x y $ color paddleColor $ rectangleSolid paddleWidth paddleHeight]
 
     paddleColor = light (light blue)
- 
 
 
--- | this function designs the screen for level 1
+
+    -- | this function designs the screen for level 1
 levels :: Int -> Picture
 levels n
     | n < length allLevels = pictures (Prelude.take n allLevels)
     | otherwise = pictures (Prelude.take (length allLevels) allLevels) 
-    where allLevels = [color orange $ rectangleSolid 80 20
-                      , color white $ circleSolid 30
-                      , translate 50 (-145) $ color red $ rectangleSolid 10 10 ]
-
-
--- | this function designs the screen for level 1
---renderLevel ::  Integer -> PongGame -> Picture
-renderLevel _ game =
- pictures [ball,
-            mkPaddle paddleColor (fromIntegral (-width)/2 + paddleOffset) $ player1 game,
-            mkPaddle paddleColor (fromIntegral width/2 - paddleOffset) $ player2 game]
-  where
-    --  The pong ball.
-    ball = uncurry translate (ballLoc game) $ color ballColor $ circleSolid 10
-    ballColor = dark red
-
-    --  Make a paddle of a given border and vertical offset.
-    mkPaddle :: Color -> Float -> Float -> Picture
-    mkPaddle col x y = pictures
-      [translate x y $ color paddleColor $ rectangleSolid paddleWidth paddleHeight]
-
-    paddleColor = light (light blue)
-
-
-
-
--- | increases the difficult of the game 
-pongLevelUp :: PongGame -> PongGame
-pongLevelUp game = game {difficult = nextLevel, ballVel = harderBallVel, paddleVel = harderPaddleVel, paddleHits = pHits}
-  where 
-    nextLevel
-      | (mod (paddleHits game) 4) == 3 = difficult game + 1
-      | otherwise = difficult game
-
-    (harderBallVel, harderPaddleVel, pHits)
-      | (mod (paddleHits game) 10) == 9 = (bv, pv, paddleHits game + 1)
-      | otherwise = (ballVel game, paddleVel game, paddleHits game)
-    
-    bv = ballVel game * 1.25                                      -- the ball speed up 25% of its velocity
-    pv = paddleVel game * 1.05                                    -- the paddles speed up 5% of its velocity
+    where allLevels = Prelude.map (\(p ,d) -> translate (fst p) (snd p) $ d) gameElements
+          gameElements = zip blocks gameBlocks
+          gameBlocks = replicate (length blocks) (color orange $ rectangleSolid blockWidth blockHeight) 
